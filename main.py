@@ -1,10 +1,10 @@
 import imageio
 import numpy as np
 import os
+import pygame
 import sys
 
-from tkinter import *
-from PIL import ImageTk, Image
+from PIL import Image
 
 COLOR_RED = (200, 0, 0)
 COLOR_GREEN = (0, 200, 0)
@@ -12,72 +12,66 @@ COLOR_GREEN = (0, 200, 0)
 COLOR_BACKGROUND = (30, 30, 30)
 
 
-# Events: https://stackoverflow.com/questions/29211794/how-to-bind-a-click-event-to-a-canvas-in-tkinter
-# Events: http://effbot.org/tkinterbook/tkinter-events-and-bindings.htm
-
-
-def callback(event):
-    print("clicked at", event.x, event.y)
-
-
 class Viz:
+
     def __init__(self):
-        self.root = Tk()
-        self.canvas = Canvas(self.root, width = 300, height = 300)
-        self.canvas.pack()
+        pygame.init()
+        self.w = 500
+        self.h = 500
+        self.display = pygame.display.set_mode((self.w, self.h), pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE)
+        pygame.display.set_caption("Example resizable window")
+        self.timeline_np_img, self.image = preprocess(*sys.argv[1:])
 
-        self.root.bind('<Configure>', self.on_root_resize)
-        #self.root.bind('<ButtonRelease-1>', self.on_root_resize)
-
-        self.image_canvas = Canvas(self.root, width = 300, height = 300)
-        self.image_canvas.pack()
-
-
-    def on_root_resize(self, event):
-        print("resize", event, event.width, event.height)
-        
-        annot_timeline_resized_img = self.timeline_img.resize((event.width - 2, 50), Image.ANTIALIAS)
-
-        self.timg = ImageTk.PhotoImage(annot_timeline_resized_img)
-
-        self.canvas.config(width=event.width - 2)
-
-        self.canvas.create_image(0, 0, anchor=NW, image=self.timg)
-        self.canvas.image = self.timg
-
-        resized_image = self.image.resize((event.width - 2, event.height - 50 - 2), Image.ANTIALIAS)
-        self.img = ImageTk.PhotoImage(resized_image)
-
-        self.image_canvas.create_image(0, 0, anchor=NW, image=self.img)
-        self.image_canvas.image = self.img
+        self.t = self.timeline_np_img.transpose(1, 0, 2)
+        self.surf = pygame.surfarray.make_surface(self.t)
 
 
+    #def on_root_resize(self, event):
 
+    #def foo(self, annot_timeline_img : Image, image : Image):
 
-    def foo(self, annot_timeline_img : Image, image : Image):
-        #self.img = ImageTk.PhotoImage(anot_timeline_img)
-        #Image.open("/media/geordi/491194e1-de55-46bb-b049-a6121d476f62/abn/radosek_manual_crop_64_64/manual_crop_64_64_images/manual_crop_anomal_hd_30fps_01_faces/1.jpg"))
+    def run(self):
+        while True:
+            #display.fill((255,255,255))
 
-        #self.img = ImageTk.PhotoImage(Image.open("/media/geordi/491194e1-de55-46bb-b049-a6121d476f62/abn/radosek_manual_crop_64_64/manual_crop_64_64_images/manual_crop_anomal_hd_30fps_01_faces/1.jpg"))
+            surf_res = pygame.transform.scale(self.surf, (self.w, 50))
 
-        #print(self.canvas.winfo_width(), self.canvas.winfo_height())
-        self.timeline_img = annot_timeline_img
-        self.image = image
-        
-        annot_timeline_resized_img = self.timeline_img.resize((300, 50), Image.ANTIALIAS)
-        self.timg = ImageTk.PhotoImage(annot_timeline_resized_img)
+            self.display.blit(surf_res, (0, 0))
 
-        self.canvas.create_image(0, 0, anchor=NW, image=self.timg)
-        self.canvas.image = self.timg
+            self.display.blit(self.image, (0, 50))
 
-        self.canvas.bind("<Button-1>", callback)
+            pygame.display.update()
 
+            # Draw a red rectangle that resizes with the window.
+            #pygame.draw.rect(display, (200,0,0), (display.get_width()/3,
+            #display.get_height()/3, display.get_width()/3,
+            #display.get_height()/3))
 
-        image_resized_img = self.image.resize((300, 300 - 50 - 2), Image.ANTIALIAS)
-        self.img = ImageTk.PhotoImage(image_resized_img)
+            pygame.display.update()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        pygame.quit()
+                        sys.exit()
+                    if event.key == pygame.K_r:
+                        pass
+                        #print(pygame.display.get_window_size())
+                        #print('h: {}, w: {}'.format(pygame.display.get_height()), pygame.display.get_width())
 
-        self.image_canvas.create_image(0, 0, anchor=NW, image=self.img)
-        self.image_canvas.image = self.img
+                        #display = pygame.display.set_mode((event.w, event.h),
+                        #                                  pygame.RESIZABLE)
+                if event.type == pygame.VIDEORESIZE:
+                    # There's some code to add back window content here.
+                    # BUG: https://github.com/pygame/pygame/issues/201
+                    self.w, self.h = event.w, event.h
+                    old_display_saved = self.display
+                    self.display = pygame.display.set_mode((self.w, self.h),
+                                                           pygame.RESIZABLE)
+                    self.display.blit(old_display_saved, (0, 0))
+                    del old_display_saved
 
 
 def parse_anot_file(annot_filename):
@@ -103,7 +97,7 @@ def create_annot_img(annotations, imgs_dir):
         #print(start, end)
         annot_img[:, start:end] = COLOR_RED
     
-    return Image.fromarray(annot_img)
+    return annot_img#Image.fromarray(annot_img)
 
 
 def preprocess(annot_filename, imgs_dir):
@@ -117,11 +111,12 @@ def preprocess(annot_filename, imgs_dir):
         annotations = parse_anot_file(annot_filename)
         annot_img = create_annot_img(annotations, imgs_dir)
 
-        imageio.imwrite('annot.png', annot_img)
+        imageio.imwrite('annot.png', Image.fromarray(annot_img))
 
         ls = os.listdir(imgs_dir)
         ls = sorted(ls)
-        img = Image.open(os.path.join(sys.argv[2], ls[0]))
+        #img = Image.open(os.path.join(sys.argv[2], ls[0]))
+        img = pygame.image.load(os.path.join(sys.argv[2], ls[0]))
     else:
         annot_img = np.zeros([50, 255, 3], np.uint8)
 
@@ -137,10 +132,14 @@ def main():
     if len(sys.argv) == 3:
         timeline_img, image = preprocess(*sys.argv[1:])
         viz = Viz()
+    #
+        viz.run()
+    #
+    #viz.root.mainloop()
 
-        viz.foo(timeline_img, image)
 
-    viz.root.mainloop()
+
+    
 
 if __name__ == '__main__':
     main()
