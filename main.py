@@ -11,6 +11,63 @@ COLOR_GREEN = (0, 200, 0)
 
 COLOR_BACKGROUND = (30, 30, 30)
 
+def load_image(filename, colorkey=None):
+    try:
+        image = pygame.image.load(filename)
+    except pygame.error as message:
+        print('Cannot load image:', filename)
+        raise SystemExit(message)
+    image = image.convert()
+    if colorkey is not None:
+        if colorkey is -1:
+            colorkey = image.get_at((0, 0))
+        image.set_colorkey(colorkey, RLEACCEL)
+    return image, image.get_rect()
+
+
+class AnnotationTimelineSprite(pygame.sprite.Sprite):
+
+    def __init__(self, image : pygame.image):
+        pygame.sprite.Sprite.__init__(self)
+        self._image, self._rect = image, image.get_rect()
+
+    @property
+    def image(self):
+        return self._image
+
+    @image.setter
+    def image(self, image):
+        self._image = image
+        self._rect = self._image.get_rect()
+
+    @property
+    def rect(self):
+        return self._rect
+
+
+class ImageSprite(pygame.sprite.Sprite):
+
+    def __init__(self, image : pygame.image):
+        pygame.sprite.Sprite.__init__(self)
+        self._image, self._rect = image, image.get_rect()
+
+    @property
+    def image(self):
+        return self._image
+
+    @image.setter
+    def image(self, image):
+        self._image = image
+        self._rect = self._image.get_rect()
+        center_x, center_y = self._rect.center
+        center_y += 50
+        self._rect.center = (center_x, center_y)
+        #self._rect.move_ip(0, 50)
+
+    @property
+    def rect(self):
+        return self._rect
+
 
 class Viz:
 
@@ -18,12 +75,19 @@ class Viz:
         pygame.init()
         self.w = 500
         self.h = 500
+
         self.display = pygame.display.set_mode((self.w, self.h), pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE)
         pygame.display.set_caption("Example resizable window")
-        self.timeline_np_img, self.image = preprocess(*sys.argv[1:])
+        timeline_np_img, self.image = preprocess(*sys.argv[1:])
 
-        self.t = self.timeline_np_img.transpose(1, 0, 2)
-        self.surf = pygame.surfarray.make_surface(self.t)
+        self.timeline_np_img = timeline_np_img.transpose(1, 0, 2)
+        self.timeline_image = pygame.surfarray.make_surface(self.timeline_np_img)
+
+        self.annotation_timeline = AnnotationTimelineSprite(self.timeline_image)
+        self.annotation_image = ImageSprite(self.image)
+
+        self.timeline_sprite = pygame.sprite.RenderPlain((self.annotation_timeline))
+        self.image_sprite = pygame.sprite.RenderPlain((self.annotation_image))
 
 
     #def on_root_resize(self, event):
@@ -32,23 +96,28 @@ class Viz:
 
     def run(self):
         while True:
-            #display.fill((255,255,255))
+            self.display.fill((0, 0, 0))
 
-            surf_res = pygame.transform.scale(self.surf, (self.w, 50))
+            timeline_res = pygame.transform.scale(self.timeline_image, (self.w, 50))
+            self.annotation_timeline.image = timeline_res
 
-            self.display.blit(surf_res, (0, 0))
+            image_res = pygame.transform.scale(self.image, (self.w, self.h - 50))
+            self.annotation_image.image = image_res
 
-            self.display.blit(self.image, (0, 50))
+            self.timeline_sprite.draw(self.display)
+            self.image_sprite.draw(self.display)
 
             pygame.display.update()
-
-            # Draw a red rectangle that resizes with the window.
-            #pygame.draw.rect(display, (200,0,0), (display.get_width()/3,
-            #display.get_height()/3, display.get_width()/3,
-            #display.get_height()/3))
 
             pygame.display.update()
             for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    print('mouse:', pos)
+                    #clicked_sprites = [s for s in [self.timeline_sprite] if s.rect.collidepoint(pos)]
+                    #for s in clicked_sprites:
+                    #    print(s)
+
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
