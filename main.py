@@ -11,6 +11,16 @@ COLOR_GREEN = (0, 200, 0)
 
 COLOR_BACKGROUND = (30, 30, 30)
 
+
+def print_help():
+    print()
+    print('anot-viz - A Tool to Vizualize Annotations')
+    print()
+    print('Usage:')
+    print('pythom main.py <annotation-file> <directory with images corresponding to annotation-file>')
+    print()
+
+
 def load_image(filename, colorkey=None):
     try:
         image = pygame.image.load(filename)
@@ -201,14 +211,11 @@ def main():
     if len(sys.argv) == 3:
         timeline_img, image = preprocess(*sys.argv[1:])
         viz = Viz()
-    #
+
         viz.run()
-    #
-    #viz.root.mainloop()
+    else:
+        print_help()
 
-
-
-    
 
 if __name__ == '__main__':
     main()
