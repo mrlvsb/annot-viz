@@ -1,3 +1,4 @@
+import collections
 import imageio
 import numpy as np
 import os
@@ -11,13 +12,27 @@ COLOR_GREEN = (0, 200, 0)
 
 COLOR_BACKGROUND = (30, 30, 30)
 
+pred_type = collections.namedtuple('prediction_type', ['slice', 'color'])
+pred_types = {'face': pred_type(slice(0, 17), (0.682, 0.780, 0.909, 0.5)),
+              'eyebrow1': pred_type(slice(17, 22), (1.0, 0.498, 0.055, 0.4)),
+              'eyebrow2': pred_type(slice(22, 27), (1.0, 0.498, 0.055, 0.4)),
+              'nose': pred_type(slice(27, 31), (0.345, 0.239, 0.443, 0.4)),
+              'nostril': pred_type(slice(31, 36), (0.345, 0.239, 0.443, 0.4)),
+              'eye1': pred_type(slice(36, 42), (0.596, 0.875, 0.541, 0.3)),
+              'eye2': pred_type(slice(42, 48), (0.596, 0.875, 0.541, 0.3)),
+              'lips': pred_type(slice(48, 60), (0.596, 0.875, 0.541, 0.3)),
+              'teeth': pred_type(slice(60, 68), (0.596, 0.875, 0.541, 0.4))
+              }
+
+landmark_types = ['face', 'eyebrow1', 'eyebrow2', 'nose', 'nostril', 'eye1', 'eye2', 'lips', 'teeth']
+
 
 def print_help():
     print()
     print('anot-viz - A Tool to Vizualize Annotations')
     print()
     print('Usage:')
-    print('pythom main.py <annotation-file> <directory with images corresponding to annotation-file>')
+    print('pythom main.py <annotation-file> <directory with images corresponding to annotation-file> [<landmarks-file>]')
     print()
 
 
@@ -31,7 +46,7 @@ def load_image(filename, colorkey=None):
     if colorkey is not None:
         if colorkey is -1:
             colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey, RLEACCEL)
+        image.set_colorkey(colorkey, pygame.RLEACCEL)
     return image, image.get_rect()
 
 
@@ -79,6 +94,14 @@ class ImageSprite(pygame.sprite.Sprite):
         return self._rect
 
 
+'''
+for pred_type in pred_types.values():
+    ax.plot(preds[pred_type.slice, 0],
+            preds[pred_type.slice, 1],
+            color=pred_type.color, **plot_style)
+'''
+
+
 class Viz:
 
     def __init__(self):
@@ -88,7 +111,10 @@ class Viz:
 
         self.display = pygame.display.set_mode((self.w, self.h), pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE)
         pygame.display.set_caption("Annot Viz")
-        timeline_np_img, self.image, self.image_filenames = preprocess(*sys.argv[1:])
+        timeline_np_img, self.image, self.image_filenames = preprocess(*sys.argv[1:3])
+        self.landmarks : list = []
+        if len(sys.argv) == 4:
+            self.landmarks = parse_landmarks_file(sys.argv[3])
         self.current_image_index = 0
 
         self.timeline_np_img = timeline_np_img.transpose(1, 0, 2)
@@ -136,7 +162,10 @@ class Viz:
             self.timeline_sprite.draw(self.display)
             self.image_sprite.draw(self.display)
 
-            pygame.display.update()
+            if len(self.landmarks) > 0:
+                face_landmarks = self.landmarks[self.current_image_index][2:]
+                for i in range(int(len(self.landmarks[self.current_image_index][2:])/3)):
+                    pygame.draw.circle(self.display, (255, 0, 0,), (int(face_landmarks[i*3 + 0] * (self.w/self.image.get_width())), int(50 + face_landmarks[i*3 + 1] * ((self.h - 50)/self.image.get_height())),), 3)
 
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -192,6 +221,9 @@ class Viz:
                     self.display.blit(old_display_saved, (0, 0))
                     del old_display_saved
 
+            pygame.display.update()
+            pygame.display.flip()
+
 
 def parse_anot_file(annot_filename):
     annotations : list = []
@@ -205,6 +237,20 @@ def parse_anot_file(annot_filename):
                 annotations.append((start, end))
 
     return annotations
+
+
+def parse_landmarks_file(landmarks_filename):
+    landmarks : list = []
+
+    with open(landmarks_filename, 'rt') as f:
+        for line in f:
+            line = line.strip()
+            _, *lm = line.split()
+            lm = list(float(x) for x in lm)
+            landmarks.append(lm)
+
+    return landmarks
+
 
 def create_annot_img(annotations, imgs_dir):
     ls = os.listdir(imgs_dir)
@@ -248,7 +294,7 @@ def preprocess(annot_filename, imgs_dir):
 
 
 def main():
-    if len(sys.argv) == 3:
+    if len(sys.argv) == 3 or len(sys.argv) == 4:
         #timeline_img, image = preprocess(*sys.argv[1:])
         viz = Viz()
 
