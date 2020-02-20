@@ -117,6 +117,9 @@ class Viz:
             self.landmarks = parse_landmarks_file(sys.argv[3])
         self.current_image_index = 0
 
+        self.width_ratio = self.w/self.image.get_width()
+        self.height_ratio = (self.h - 50)/self.image.get_height()
+
         self.timeline_np_img = timeline_np_img.transpose(1, 0, 2)
         self.timeline_image = pygame.surfarray.make_surface(self.timeline_np_img)
 
@@ -150,6 +153,7 @@ class Viz:
 
 
     def run(self):
+
         while True:
             self.display.fill((0, 0, 0))
 
@@ -164,8 +168,11 @@ class Viz:
 
             if len(self.landmarks) > 0:
                 face_landmarks = self.landmarks[self.current_image_index][2:]
-                for i in range(int(len(self.landmarks[self.current_image_index][2:])/3)):
-                    pygame.draw.circle(self.display, (255, 0, 0,), (int(face_landmarks[i*3 + 0] * (self.w/self.image.get_width())), int(50 + face_landmarks[i*3 + 1] * ((self.h - 50)/self.image.get_height())),), 3)
+
+                for pred_type in pred_types.values():
+                    coords = face_landmarks[pred_type.slice]
+                    for lm in coords:
+                        pygame.draw.circle(self.display, tuple(x * 255 for x in pred_type.color), (int(lm[0] * self.width_ratio), int(50 + lm[1] * self.height_ratio,)), 3)
 
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -215,6 +222,10 @@ class Viz:
                     # There's some code to add back window content here.
                     # BUG: https://github.com/pygame/pygame/issues/201
                     self.w, self.h = event.w, event.h
+
+                    self.width_ratio = self.w/self.image.get_width()
+                    self.height_ratio = (self.h - 50)/self.image.get_height()
+
                     old_display_saved = self.display
                     self.display = pygame.display.set_mode((self.w, self.h),
                                                            pygame.RESIZABLE)
@@ -245,9 +256,11 @@ def parse_landmarks_file(landmarks_filename):
     with open(landmarks_filename, 'rt') as f:
         for line in f:
             line = line.strip()
-            _, *lm = line.split()
-            lm = list(float(x) for x in lm)
-            landmarks.append(lm)
+            _, *lms = line.split()
+            lms = list(float(x) for x in lms)
+
+            lms = lms[:2] + list((lms[2 + i*3 + 0], lms[2 + i*3 + 1], lms[2 + i*3 + 2], ) for i in range(int(len(lms[2:])/3)))
+            landmarks.append(lms)
 
     return landmarks
 
