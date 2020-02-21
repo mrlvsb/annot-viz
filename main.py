@@ -152,88 +152,94 @@ class Viz:
         self.image = pygame.image.load(os.path.join(sys.argv[2], self.image_filenames[self.current_image_index]))
 
 
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                button_l, button_m, button_r = pygame.mouse.get_pressed()
+                pos = pygame.mouse.get_pos()
+                #print('mouse:', pos)
+                #print(type(self.timeline_sprite))
+                #print(len(self.timeline_sprite))
+                #print(self.timeline_sprite.sprites())
+                clicked_sprites = [s for s in [*self.timeline_sprite.sprites(), *self.image_sprite.sprites()] if s.rect.collidepoint(pos)]
+                for s in clicked_sprites:
+                    if isinstance(s, ImageSprite):
+                        pos_x, pos_y = pos
+                        if pos_x > self.w / 2:
+                            if button_l:
+                                self.display_next()
+                            elif button_r:
+                                self.display_next(24)
+                        else:
+                            if button_l:
+                                self.display_prev()
+                            elif button_r:
+                                self.display_prev(24)
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+                elif event.key == pygame.K_r:
+                    pass
+                elif event.key == pygame.K_RIGHT:
+                    self.display_next()
+                elif event.key == pygame.K_PAGEUP:
+                    self.display_next(24)
+                elif event.key == pygame.K_LEFT:
+                    self.display_prev()
+                elif event.key == pygame.K_PAGEDOWN:
+                    self.display_prev(24)
+                    #print(pygame.display.get_window_size())
+                    #print('h: {}, w: {}'.format(pygame.display.get_height()), pygame.display.get_width())
+
+                    #display = pygame.display.set_mode((event.w, event.h),
+                    #                                  pygame.RESIZABLE)
+            if event.type == pygame.VIDEORESIZE:
+                # There's some code to add back window content here.
+                # BUG: https://github.com/pygame/pygame/issues/201
+                self.w, self.h = event.w, event.h
+
+                self.width_ratio = self.w/self.image.get_width()
+                self.height_ratio = (self.h - 50)/self.image.get_height()
+
+                old_display_saved = self.display
+                self.display = pygame.display.set_mode((self.w, self.h),
+                                                        pygame.RESIZABLE)
+                self.display.blit(old_display_saved, (0, 0))
+                del old_display_saved
+
+
+    def draw(self):
+        self.display.fill((0, 0, 0))
+
+        timeline_res = pygame.transform.scale(self.timeline_image, (self.w, 50))
+        self.annotation_timeline.image = timeline_res
+
+        image_res = pygame.transform.scale(self.image, (self.w, self.h - 50))
+        self.annotation_image.image = image_res
+
+        self.timeline_sprite.draw(self.display)
+        self.image_sprite.draw(self.display)
+
+        if len(self.landmarks) > 0:
+            face_landmarks = self.landmarks[self.current_image_index][2:]
+
+            for pred_type in pred_types.values():
+                coords = face_landmarks[pred_type.slice]
+                for lm in coords:
+                    pygame.draw.circle(self.display, tuple(x * 255 for x in pred_type.color), (int(lm[0] * self.width_ratio), int(50 + lm[1] * self.height_ratio,)), 3)
+
+        pygame.display.flip()
+
+
     def run(self):
 
         while True:
-            self.display.fill((0, 0, 0))
-
-            timeline_res = pygame.transform.scale(self.timeline_image, (self.w, 50))
-            self.annotation_timeline.image = timeline_res
-
-            image_res = pygame.transform.scale(self.image, (self.w, self.h - 50))
-            self.annotation_image.image = image_res
-
-            self.timeline_sprite.draw(self.display)
-            self.image_sprite.draw(self.display)
-
-            if len(self.landmarks) > 0:
-                face_landmarks = self.landmarks[self.current_image_index][2:]
-
-                for pred_type in pred_types.values():
-                    coords = face_landmarks[pred_type.slice]
-                    for lm in coords:
-                        pygame.draw.circle(self.display, tuple(x * 255 for x in pred_type.color), (int(lm[0] * self.width_ratio), int(50 + lm[1] * self.height_ratio,)), 3)
-
-            for event in pygame.event.get():
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    button_l, button_m, button_r = pygame.mouse.get_pressed()
-                    pos = pygame.mouse.get_pos()
-                    #print('mouse:', pos)
-                    #print(type(self.timeline_sprite))
-                    #print(len(self.timeline_sprite))
-                    #print(self.timeline_sprite.sprites())
-                    clicked_sprites = [s for s in [*self.timeline_sprite.sprites(), *self.image_sprite.sprites()] if s.rect.collidepoint(pos)]
-                    for s in clicked_sprites:
-                        if isinstance(s, ImageSprite):
-                            pos_x, pos_y = pos
-                            if pos_x > self.w / 2:
-                                if button_l:
-                                    self.display_next()
-                                elif button_r:
-                                    self.display_next(24)
-                            else:
-                                if button_l:
-                                    self.display_prev()
-                                elif button_r:
-                                    self.display_prev(24)
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        pygame.quit()
-                        sys.exit()
-                    elif event.key == pygame.K_r:
-                        pass
-                    elif event.key == pygame.K_RIGHT:
-                        self.display_next()
-                    elif event.key == pygame.K_PAGEUP:
-                        self.display_next(24)
-                    elif event.key == pygame.K_LEFT:
-                        self.display_prev()
-                    elif event.key == pygame.K_PAGEDOWN:
-                        self.display_prev(24)
-                        #print(pygame.display.get_window_size())
-                        #print('h: {}, w: {}'.format(pygame.display.get_height()), pygame.display.get_width())
-
-                        #display = pygame.display.set_mode((event.w, event.h),
-                        #                                  pygame.RESIZABLE)
-                if event.type == pygame.VIDEORESIZE:
-                    # There's some code to add back window content here.
-                    # BUG: https://github.com/pygame/pygame/issues/201
-                    self.w, self.h = event.w, event.h
-
-                    self.width_ratio = self.w/self.image.get_width()
-                    self.height_ratio = (self.h - 50)/self.image.get_height()
-
-                    old_display_saved = self.display
-                    self.display = pygame.display.set_mode((self.w, self.h),
-                                                           pygame.RESIZABLE)
-                    self.display.blit(old_display_saved, (0, 0))
-                    del old_display_saved
-
-            pygame.display.update()
-            pygame.display.flip()
+            self.handle_events()
+            self.draw()
 
 
 def parse_anot_file(annot_filename):
