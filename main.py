@@ -32,7 +32,12 @@ def print_help():
     print('anot-viz - A Tool to Vizualize Annotations')
     print()
     print('Usage:')
+    print()
     print('pythom main.py <annotation-file> <directory with images corresponding to annotation-file> [<landmarks-file>]')
+    print()
+    print("or")
+    print()
+    print('pythom main.py -n <landmarks-file> <directory with images corresponding to landmarks-file>')
     print()
 
 
@@ -104,17 +109,37 @@ for pred_type in pred_types.values():
 
 class Viz:
 
-    def __init__(self):
-        pygame.init()
+    def __init__(self, normal_mode=False):
         self.w = 500
         self.h = 500
+        self.normal_mode = normal_mode
+
+        pygame.init()
 
         self.display = pygame.display.set_mode((self.w, self.h), pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE)
         pygame.display.set_caption("Annot Viz")
-        timeline_np_img, self.image, self.image_filenames = preprocess(*sys.argv[1:3])
+
         self.landmarks : list = []
-        if len(sys.argv) == 4:
-            self.landmarks = parse_landmarks_file(sys.argv[3])
+
+        print()
+        print('Preprocessing... ', end='')
+        sys.stdout.flush()
+
+        if self.normal_mode:
+            self.landmarks_filename, self.imgs_dir = sys.argv[2:4]
+            timeline_np_img, self.image, self.image_filenames = preprocess_normal_mode(self.landmarks_filename, self.imgs_dir)
+            self.landmarks = parse_landmarks_file(self.landmarks_filename)
+        else:
+            self.annotation_filename, self.imgs_dir = sys.argv[1:3]
+            timeline_np_img, self.image, self.image_filenames = preprocess(self.annotation_filename, self.imgs_dir)
+
+            if len(sys.argv) == 4:
+                self.landmarks_filename = sys.argv[3]
+                self.landmarks = parse_landmarks_file(self.landmarks_filename)
+
+        print('DONE.')
+        print()
+
         self.current_image_index = 0
 
         self.width_ratio = self.w/self.image.get_width()
@@ -140,7 +165,7 @@ class Viz:
         else:
             self.current_image_index = 0
 
-        self.image = pygame.image.load(os.path.join(sys.argv[2], self.image_filenames[self.current_image_index]))
+        self.image = pygame.image.load(os.path.join(self.imgs_dir, self.image_filenames[self.current_image_index]))
 
 
     def display_prev(self, amount=1):
@@ -149,7 +174,7 @@ class Viz:
         else:
             self.current_image_index = len(self.image_filenames) - amount
 
-        self.image = pygame.image.load(os.path.join(sys.argv[2], self.image_filenames[self.current_image_index]))
+        self.image = pygame.image.load(os.path.join(self.imgs_dir, self.image_filenames[self.current_image_index]))
 
 
     def handle_events(self):
@@ -215,8 +240,11 @@ class Viz:
     def draw(self):
         self.display.fill((0, 0, 0))
 
-        timeline_res = pygame.transform.scale(self.timeline_image, (self.w, 50))
-        self.annotation_timeline.image = timeline_res
+        if self.normal_mode:
+            pass
+        else:
+            timeline_res = pygame.transform.scale(self.timeline_image, (self.w, 50))
+            self.annotation_timeline.image = timeline_res
 
         image_res = pygame.transform.scale(self.image, (self.w, self.h - 50))
         self.annotation_image.image = image_res
@@ -295,7 +323,7 @@ def preprocess(annot_filename, imgs_dir):
         annotations = parse_anot_file(annot_filename)
         annot_img = create_annot_img(annotations, imgs_dir)
 
-        imageio.imwrite('annot.png', Image.fromarray(annot_img))
+        #imageio.imwrite('annot.png', Image.fromarray(annot_img))
 
         ls = os.listdir(imgs_dir)
         ls = sorted(ls)
@@ -307,14 +335,48 @@ def preprocess(annot_filename, imgs_dir):
         #print(annot_img[0, 0])
         annot_img[0:10, :] = (255, 0, 0)
 
-        imageio.imwrite('annot.png', annot_img)
+        #imageio.imwrite('annot.png', annot_img)
+
+    return annot_img, img, ls
+
+
+def preprocess_normal_mode(normal_filename, imgs_dir):
+
+    annot_img : np.ndarray
+    img : Image
+
+    #print(annot_filename, imgs_dir)
+
+    if os.path.exists(imgs_dir):
+        #annotations = parse_anot_file(normal_filename)
+        ls = os.listdir(imgs_dir)
+        img_w : int = 3000
+        annot_img = annot_img = np.zeros([50, img_w, 3], np.uint8)#create_annot_img(annotations, imgs_dir)
+
+        #imageio.imwrite('annot.png', Image.fromarray(annot_img))
+
+        ls = os.listdir(imgs_dir)
+        ls = sorted(ls)
+        #img = Image.open(os.path.join(sys.argv[2], ls[0]))
+        img = pygame.image.load(os.path.join(imgs_dir, ls[0]))
+    else:
+        annot_img = np.zeros([50, 255, 3], np.uint8)
+
+        #print(annot_img[0, 0])
+        annot_img[0:10, :] = (255, 0, 0)
+
+        #imageio.imwrite('annot.png', annot_img)
 
     return annot_img, img, ls
 
 
 def main():
-    if len(sys.argv) == 3 or len(sys.argv) == 4:
-        #timeline_img, image = preprocess(*sys.argv[1:])
+    if '-n' in sys.argv:
+        viz = Viz(normal_mode=True)
+        viz.run()
+    elif '-h' in sys.argv:
+        print_help()
+    elif len(sys.argv) == 3 or len(sys.argv) == 4:
         viz = Viz()
 
         viz.run()
