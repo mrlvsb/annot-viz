@@ -6,8 +6,8 @@
 In a new virtual env run:
 
 ```
-$ pip install -U pip setuptools wheel
-$ pip install -r requirements.txt
+pip install -U pip setuptools wheel
+pip install -r requirements.txt
 ```
 
 
@@ -16,7 +16,7 @@ $ pip install -r requirements.txt
 `pythom main.py <annotation-file> <directory with images corresponding to annotation-file> [<landmarks-file>]`
 
 
-## Getting images from video
+## Getting Images from Video
 
 ```
 ffmpeg -i input.avi -q:v 2 -f image2 output_dir/img%06d.jpg
