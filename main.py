@@ -260,6 +260,17 @@ class Viz:
                 for lm in coords:
                     pygame.draw.circle(self.display, tuple(x * 255 for x in pred_type.color), (int(lm[0] * self.width_ratio), int(50 + lm[1] * self.height_ratio,)), 3)
 
+        # display frame info
+        pygame.draw.rect(self.display, (0, 0, 0), pygame.Rect(0, self.h - 30, 200, 30))
+
+        if pygame.font:
+            font = pygame.font.Font(None, 22)
+            text = font.render('Frame= {}'.format(self.current_image_index + 1), 1, (255, 255, 255))
+            textpos = text.get_rect(left=10, centery=self.h - 10) # FIXME: bottomleft would be better
+            self.display.blit(text, textpos)
+
+
+
         pygame.display.flip()
 
 
