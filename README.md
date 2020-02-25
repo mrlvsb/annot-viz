@@ -15,6 +15,10 @@ pip install -r requirements.txt
 
 `pythom main.py <annotation-file> <directory with images corresponding to annotation-file> [<landmarks-file>]`
 
+or
+
+`pythom main.py -n <landmarks-file> <directory with images corresponding to landmarks-file>`
+
 
 ## Getting Images from Video
 
