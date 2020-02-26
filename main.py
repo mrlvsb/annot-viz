@@ -12,6 +12,10 @@ COLOR_GREEN = (0, 200, 0)
 
 COLOR_BACKGROUND = (30, 30, 30)
 
+TIMELINE_HEIGHT = 50
+STATUSBAR_HEIGHT = 30
+
+
 pred_type = collections.namedtuple('prediction_type', ['slice', 'color'])
 pred_types = {'face': pred_type(slice(0, 17), (0.682, 0.780, 0.909, 0.5)),
               'eyebrow1': pred_type(slice(17, 22), (1.0, 0.498, 0.055, 0.4)),
@@ -90,9 +94,9 @@ class ImageSprite(pygame.sprite.Sprite):
         self._image = image
         self._rect = self._image.get_rect()
         center_x, center_y = self._rect.center
-        center_y += 50
+        center_y += TIMELINE_HEIGHT
         self._rect.center = (center_x, center_y)
-        #self._rect.move_ip(0, 50)
+        #self._rect.move_ip(0, TIMELINE_HEIGHT)
 
     @property
     def rect(self):
@@ -143,7 +147,7 @@ class Viz:
         self.current_image_index = 0
 
         self.width_ratio = self.w/self.image.get_width()
-        self.height_ratio = (self.h - 50)/self.image.get_height()
+        self.height_ratio = (self.h - TIMELINE_HEIGHT)/self.image.get_height()
 
         self.timeline_np_img = timeline_np_img.transpose(1, 0, 2)
         self.timeline_image = pygame.surfarray.make_surface(self.timeline_np_img)
@@ -228,7 +232,7 @@ class Viz:
                 self.w, self.h = event.w, event.h
 
                 self.width_ratio = self.w/self.image.get_width()
-                self.height_ratio = (self.h - 50)/self.image.get_height()
+                self.height_ratio = (self.h - TIMELINE_HEIGHT)/self.image.get_height()
 
                 old_display_saved = self.display
                 self.display = pygame.display.set_mode((self.w, self.h),
@@ -243,10 +247,10 @@ class Viz:
         if self.normal_mode:
             pass
         else:
-            timeline_res = pygame.transform.scale(self.timeline_image, (self.w, 50))
+            timeline_res = pygame.transform.scale(self.timeline_image, (self.w, TIMELINE_HEIGHT))
             self.annotation_timeline.image = timeline_res
 
-        image_res = pygame.transform.scale(self.image, (self.w, self.h - 50))
+        image_res = pygame.transform.scale(self.image, (self.w, self.h - TIMELINE_HEIGHT))
         self.annotation_image.image = image_res
 
         self.timeline_sprite.draw(self.display)
@@ -258,10 +262,10 @@ class Viz:
             for pred_type in pred_types.values():
                 coords = face_landmarks[pred_type.slice]
                 for lm in coords:
-                    pygame.draw.circle(self.display, tuple(x * 255 for x in pred_type.color), (int(lm[0] * self.width_ratio), int(50 + lm[1] * self.height_ratio,)), 3)
+                    pygame.draw.circle(self.display, tuple(x * 255 for x in pred_type.color), (int(lm[0] * self.width_ratio), int(TIMELINE_HEIGHT + lm[1] * self.height_ratio,)), 3)
 
         # display frame info
-        pygame.draw.rect(self.display, (0, 0, 0), pygame.Rect(0, self.h - 30, 200, 30))
+        pygame.draw.rect(self.display, (0, 0, 0), pygame.Rect(0, self.h - STATUSBAR_HEIGHT, 200, 30))
 
         if pygame.font:
             font = pygame.font.Font(None, 22)
@@ -313,7 +317,7 @@ def parse_landmarks_file(landmarks_filename):
 def create_annot_img(annotations, imgs_dir):
     ls = os.listdir(imgs_dir)
     img_w : int = len(ls)
-    annot_img = np.zeros([50, img_w, 3], np.uint8)
+    annot_img = np.zeros([TIMELINE_HEIGHT, img_w, 3], np.uint8)
     annot_img[:, :] = COLOR_GREEN
 
     for start, end in annotations:
@@ -341,7 +345,7 @@ def preprocess(annot_filename, imgs_dir):
         #img = Image.open(os.path.join(sys.argv[2], ls[0]))
         img = pygame.image.load(os.path.join(sys.argv[2], ls[0]))
     else:
-        annot_img = np.zeros([50, 255, 3], np.uint8)
+        annot_img = np.zeros([TIMELINE_HEIGHT, 255, 3], np.uint8)
 
         #print(annot_img[0, 0])
         annot_img[0:10, :] = (255, 0, 0)
@@ -362,7 +366,7 @@ def preprocess_normal_mode(normal_filename, imgs_dir):
         #annotations = parse_anot_file(normal_filename)
         ls = os.listdir(imgs_dir)
         img_w : int = 3000
-        annot_img = annot_img = np.zeros([50, img_w, 3], np.uint8)#create_annot_img(annotations, imgs_dir)
+        annot_img = annot_img = np.zeros([TIMELINE_HEIGHT, img_w, 3], np.uint8)#create_annot_img(annotations, imgs_dir)
 
         #imageio.imwrite('annot.png', Image.fromarray(annot_img))
 
@@ -371,7 +375,7 @@ def preprocess_normal_mode(normal_filename, imgs_dir):
         #img = Image.open(os.path.join(sys.argv[2], ls[0]))
         img = pygame.image.load(os.path.join(imgs_dir, ls[0]))
     else:
-        annot_img = np.zeros([50, 255, 3], np.uint8)
+        annot_img = np.zeros([TIMELINE_HEIGHT, 255, 3], np.uint8)
 
         #print(annot_img[0, 0])
         annot_img[0:10, :] = (255, 0, 0)
