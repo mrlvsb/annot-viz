@@ -20,6 +20,12 @@ or
 `pythom main.py -n <landmarks-file> <directory with images corresponding to landmarks-file>`
 
 
+### Keyboard
+
+- left/right arrow - next/previous frame
+- PgUp/PgDn - next/previous 24 frames
+
+
 ## Getting Images from Video
 
 ```
