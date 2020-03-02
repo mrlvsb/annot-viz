@@ -226,6 +226,10 @@ class Viz:
 
                     #display = pygame.display.set_mode((event.w, event.h),
                     #                                  pygame.RESIZABLE)
+                elif event.key == pygame.K_j:
+                    self.display_prev(200)
+                elif event.key == pygame.K_k:
+                    self.display_next(200)
             if event.type == pygame.VIDEORESIZE:
                 # There's some code to add back window content here.
                 # BUG: https://github.com/pygame/pygame/issues/201
@@ -272,8 +276,6 @@ class Viz:
             text = font.render('Frame= {}'.format(self.current_image_index + 1), 1, (255, 255, 255))
             textpos = text.get_rect(left=10, centery=self.h - 10) # FIXME: bottomleft would be better
             self.display.blit(text, textpos)
-
-
 
         pygame.display.flip()
 
