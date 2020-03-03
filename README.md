@@ -22,8 +22,9 @@ or
 
 ### Keyboard
 
-- left/right arrow - next/previous frame
-- PgUp/PgDn - next/previous 24 frames
+- `left`/`right` arrow (&larr;/&rarr;) - next/previous frame
+- `PgUp`/`PgDn` - next/previous 24 frames
+- `j`/`k` - next/previous 200 frames
 
 
 ## Getting Images from Video
