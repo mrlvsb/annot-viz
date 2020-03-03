@@ -268,6 +268,18 @@ class Viz:
                 for lm in coords:
                     pygame.draw.circle(self.display, tuple(x * 255 for x in pred_type.color), (int(lm[0] * self.width_ratio), int(TIMELINE_HEIGHT + lm[1] * self.height_ratio,)), 3)
 
+        # current frame highlighter
+        line_x_pos = int((self.current_image_index / len(self.image_filenames)) * self.w)
+        pygame.draw.line(self.display, (255, 255, 255), (line_x_pos, 0), (line_x_pos, TIMELINE_HEIGHT - 1))
+
+
+        arrow_line_coords = []
+        for i in range(5):
+            arrow_line_coords.append((line_x_pos - i - 1, TIMELINE_HEIGHT + i, ))
+            arrow_line_coords.append((line_x_pos + i + 1, TIMELINE_HEIGHT + i, ))
+
+        pygame.draw.lines(self.display, (255, 255, 255), False, arrow_line_coords)
+
         # display frame info
         pygame.draw.rect(self.display, (0, 0, 0), pygame.Rect(0, self.h - STATUSBAR_HEIGHT, 200, 30))
 
