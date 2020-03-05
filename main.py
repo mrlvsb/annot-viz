@@ -117,6 +117,7 @@ class Viz:
         self.w = 500
         self.h = 500
         self.normal_mode = normal_mode
+        self.clock = pygame.time.Clock()
 
         pygame.init()
 
@@ -290,6 +291,7 @@ class Viz:
             self.display.blit(text, textpos)
 
         pygame.display.flip()
+        self.clock.tick(5)
 
 
     def run(self):
