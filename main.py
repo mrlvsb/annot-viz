@@ -155,6 +155,7 @@ class Viz:
 
         self.annotation_timeline = AnnotationTimelineSprite(self.timeline_image)
         self.annotation_image = ImageSprite(self.image)
+        self.scale_annotation_image()
 
         self.timeline_sprite = pygame.sprite.RenderPlain((self.annotation_timeline))
         self.image_sprite = pygame.sprite.RenderPlain((self.annotation_image))
@@ -171,6 +172,7 @@ class Viz:
             self.current_image_index = 0
 
         self.image = pygame.image.load(os.path.join(self.imgs_dir, self.image_filenames[self.current_image_index]))
+        self.scale_annotation_image()
 
 
     def display_prev(self, amount=1):
@@ -180,6 +182,12 @@ class Viz:
             self.current_image_index = len(self.image_filenames) - amount
 
         self.image = pygame.image.load(os.path.join(self.imgs_dir, self.image_filenames[self.current_image_index]))
+        self.scale_annotation_image()
+
+
+    def scale_annotation_image(self):
+        image_res = pygame.transform.scale(self.image, (self.w, self.h - TIMELINE_HEIGHT))
+        self.annotation_image.image = image_res
 
 
     def handle_events(self):
@@ -242,6 +250,9 @@ class Viz:
                 old_display_saved = self.display
                 self.display = pygame.display.set_mode((self.w, self.h),
                                                         pygame.RESIZABLE)
+
+                self.scale_annotation_image()
+
                 self.display.blit(old_display_saved, (0, 0))
                 del old_display_saved
 
@@ -254,9 +265,6 @@ class Viz:
         else:
             timeline_res = pygame.transform.scale(self.timeline_image, (self.w, TIMELINE_HEIGHT))
             self.annotation_timeline.image = timeline_res
-
-        image_res = pygame.transform.scale(self.image, (self.w, self.h - TIMELINE_HEIGHT))
-        self.annotation_image.image = image_res
 
         self.timeline_sprite.draw(self.display)
         self.image_sprite.draw(self.display)
