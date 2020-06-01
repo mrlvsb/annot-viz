@@ -32,3 +32,14 @@ or
 ```
 ffmpeg -i input.avi -q:v 2 -f image2 output_dir/img%06d.jpg
 ```
+
+## Example of a landmark file
+
+- one frame per line
+
+```
+filename mean.x mean.y face_lms eyebrow1_lms eyebrow2_lms nose_lms nostril_lms eye1_lms eye2_lms lips_lms teeth_lms 
+```
+
+`_lms` stands for landmarks
+
